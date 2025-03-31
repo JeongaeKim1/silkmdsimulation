@@ -1,0 +1,207 @@
+######### 3d Lennard-Jones for polymeric system ############# 
+######## simulting polymer brush by "grafting from" approach##
+##### study the effect of iniatior density embedded in the #### #### substrate on chain length disbribution and polydispersity### 
+
+units		lj
+atom_style	atomic
+boundary        p p p 
+########## configure the simulation setup ############
+#rho is 0.016 before
+read_data	resultingsilk.data
+#read_restart	agoodstart.restart
+#replicate	1 2 2
+variable        rho equal 2/(2*2^(1./6.))^3 
+
+variable        dimx equal 16*4
+variable        dimy equal 8*2
+variable        dimz equal 8*2
+
+region	end block  0 2 INF INF INF INF units box
+#delete_atoms	region end
+
+#lattice	sc 0.125
+#region	mybox block 0 50 0 30 0 30 units box
+#create_atoms 5 box
+
+#mass (soft segment = 1.0 / hard segment = 1.0)
+variable        mass5 equal 1.0
+mass            * 1.0
+mass            1 0.2
+mass            2 0.2
+mass            3 0.1
+mass            4 0.1
+mass            5 0.35 #solvent mass
+
+mass            6 0.1
+mass            7 1.0
+mass            8 1.0
+
+###### randomly reset some of the bottom substrate atoms to radical atoms ####
+
+group           patch4 type 4
+group           patch1 type 1
+group           patch2 type 2
+group           patch3 type 3
+group           patch6 type 6
+group           patch5 type 5
+group           patch7 type 7
+group           patch8 type 8
+#delete_atoms   group patch6
+group           patch9 type 9
+delete_atoms    group patch9
+
+#temperature is 0.028 before
+variable	t equal 0.04
+variable	tf equal 0.04
+velocity	all create $t 12345
+
+ 
+#c is 2.35 before for chains, 1.9 for very compact
+variable        c equal 1.8
+variable        s equal $c/2^(1./6.)
+
+#variable        m equal ${shift}/2^(1./6.)
+#variable        n equal $m*1.6
+
+variable        u equal 1.0
+variable        v equal $u/2^(1./6.)
+
+variable        p equal 1.0
+variable        q equal $p/2^(1./6.)
+
+variable        h equal 1.0
+variable        k equal $h/2^(1./6.)
+
+variable        h2 equal 1.0
+variable        k2 equal ${h2}/2^(1./6.)
+
+variable        h3 equal sqrt(2.0) # 1.414
+variable        k3 equal ${h3}/2^(1./6.)
+
+variable        b equal 0.2
+variable        b1 equal 0.14
+
+variable        c3 equal 2.0
+variable        s3 equal ${c3}/2^(1./6.)
+
+variable        c5 equal 1.6
+variable        s5 equal ${c5}/2^(1./6.)
+
+variable        h4 equal 0.5
+variable        k4 equal ${h4}/2^(1./6.)
+
+variable        h5 equal 0.50
+variable        k5 equal ${h5}/2^(1./6.)
+
+variable        c4 equal 0.707
+variable        s4 equal ${c4}/2^(1./6.)
+
+variable        c6 equal 2.5
+variable        s6 equal ${c6}/2^(1./6.)
+
+variable        c7 equal 2.8
+variable        s7 equal ${c7}/2^(1./6.)
+
+#pair_style     lj/cut/bump/smooth/linear 2.5
+pair_style      lj/cut/bump 2.8 #cutoff 2.8
+pair_coeff      * * 0.02 $v 1.0 1 0 $u
+
+#backbone
+#in hard segment
+pair_coeff      1 1 20.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+pair_coeff      2 2 20.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+pair_coeff      1 2 20.0 ${k2} 1.2 1 1.0 1.8 #1 strong bond
+
+#connect soft segments in outside and inside hard segments
+pair_coeff      2 7 20.0 ${k2} 1.2 1 1.0 1.8 #1 strong bond
+pair_coeff      1 8 20.0 ${k2} 1.2 1 1.0 1.8 #1 strong bond
+pair_coeff      1 7 20.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+pair_coeff      2 8 20.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+
+#soft segment (distance between soft/soft = 2.2)
+pair_coeff      7 7 20.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+pair_coeff      8 8 20.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+pair_coeff      7 8 10.0 ${k2} 1.2 0.79 1.0 2.8 #1 strong bond/2.2 attraction
+
+#intramolecular interactions in hard segments
+pair_coeff      1 3 20.0 ${k4} 1.2 1 2.0 1.118 #0.5 strong bond
+pair_coeff      2 3 20.0 ${k4} 1.2 1 2.0 1.118 #0.5 strong bond
+pair_coeff      1 4 20.0 ${k4} 1.2 1 2.0 1.118 #0.5 strong bond
+pair_coeff      2 4 20.0 ${k4} 1.2 1 2.0 1.118 #0.5 strong bond
+pair_coeff      1*2 6 20.0 ${s4} 1.2 1 2.0 1.225 #0.707 strong bond
+
+pair_coeff      3 4 20.0 ${s4} 1.2 1 2.0 1.225 #0.707 weak bond ####
+pair_coeff      3*4 6 20.0 ${k4} 1.2 1 2.0 1.118 #0.5 strong bond
+#pair_coeff      3*4 6 0.01 ${k5} 1.2 1 0.0 0.50 #0.50 only repulsion ####
+
+#pair_coeff      3 3 10.0 ${k2} 1.2 1 1.0 1.2 #1 strong bond_initial
+#pair_coeff      4 4 10.0 ${k2} 1.2 1 1.0 1.2 #1 strong bond_initial
+
+pair_coeff      6 6 5.0 ${k2} 1.16 1.0 2.0 1.12 #1 strong bond ####
+
+#intermolecular interactions between soft and hard segments
+
+pair_coeff      3*4 7 0.01 ${k4} 1.2 1 0.0 0.5 #0.5 only repulsion
+pair_coeff      3*4 8 0.01 ${k4} 1.2 1 0.0 0.5 #0.5 only repulsion
+pair_coeff      6 7 0.01 ${k4} 1.2 1 0.0 0.5 #0.5 only repulsion
+pair_coeff      6 8 0.01 ${k4} 1.2 1 0.0 0.5 #0.5 only repulsion
+#velocity       all set NULL 0.0 0.0
+#fix            11 all setforce NULL 0.0 0.0
+
+#turn on hydrophobic interaction of solvent particles
+variable        c8 equal 2.0
+variable        s8 equal ${c8}/2^(1./6.)
+
+variable        c9 equal 2.2
+variable        s9 equal ${c9}/2^(1./6.)
+
+variable        c10 equal 0.3
+variable        s10 equal ${c10}/2^(1./6.)
+
+pair_coeff      1*2 5 0.05 ${s9} 1.2 1 0.0 2.2 # 2.2 only repulsion
+
+pair_coeff      3*4 5 0.01 ${s10} 1.2 1 0.0 0.3 #only repulsion
+pair_coeff      5 6 0.01 ${s10} 1.2 1 0.0 0.3 #only repulsion
+
+#turn on 33bond and 44bond
+pair_coeff      3 3 2.5 ${k2} 1.1 0.415 2.0 2.8 #1 strong bond
+pair_coeff      4 4 2.5 ${k2} 1.1 0.475 2.0 2.8 #1 strong bond
+
+#turn on hydrophilic interaction of solvent particles
+pair_coeff      5 5 0.05 ${s9} 1.2 1 0.0 2.2 # 2.2 only repulsion
+
+pair_coeff      5 7 0.05 ${s8} 1.2 1 0.0 2.8 # 2.0 attraction
+pair_coeff      5 8 0.05 ${s8} 1.2 1 0.0 2.8 # 2.0 attraction
+
+pair_modify     tail no
+pair_modify     shift yes
+neighbor        0.5 bin
+neigh_modify    every 1 delay 0 check yes
+
+
+timestep	0.001
+thermo		1000
+thermo_style    custom step temp pe ke etotal pxx pyy pzz lx ly lz press vol 
+
+
+####################relaxation#####################################
+fix             1 all npt temp $t $t 0.01 x 0.0 0.0 5.0 y 0.0 0.0 5.0 z 0.0 0.0 5.0
+run		100000
+unfix		1
+
+#replicate       2 2 2 
+
+reset_timestep  0
+thermo		2000
+
+restart         1000000 agoodstart.restart
+
+log            log.tensile1
+#dump            1 all custom 500000 ./testframe/tensile*.olivia id type x y z fx fy fz
+dump            1 all custom 250000 lata4olivia_tensile1 id type x y z fx fy fz vx vy vz
+fix             1 all npt temp $t $t 0.01 y 0.0 0.0 5.0 z 0.0 0.0 5.0
+fix		2 all deform 1 x erate 0.0001
+
+run		20000000
+
+

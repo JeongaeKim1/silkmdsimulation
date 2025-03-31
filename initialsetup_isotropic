@@ -1,0 +1,352 @@
+######### 3d Lennard-Jones for polymeric system ############# 
+######## simulting polymer brush by "grafting from" approach##
+##### study the effect of iniatior density embedded in the #### #### substrate on chain length disbribution and polydispersity### 
+
+units		lj
+atom_style	atomic
+boundary        p p p 
+########## configure the simulation setup ############
+#rho is 0.016 before
+variable        rho equal 2/(2*2^(1./6.))^3 
+
+variable        dimx equal 16
+variable        dimy equal 7
+variable        dimz equal 7
+
+#variable        rho2 equal 6./(2*2^(1./6.))^3 
+variable        rho2 equal 18./(2)^3 
+# set up initial hard segment crystal structure 
+lattice	custom ${rho2} & 
+                basis 0.01 0.51 0.51 basis 0.51 0.51 0.51 &
+                basis 0.01 0.26 0.51 &
+                basis 0.01 0.51 0.26 &
+                basis 0.01 0.76 0.51 &
+                basis 0.01 0.51 0.76 &
+                basis 0.51 0.26 0.51 &
+                basis 0.51 0.51 0.26 &
+                basis 0.51 0.76 0.51 &
+                basis 0.51 0.51 0.76 &
+                basis 0.01 0.26 0.26 &
+                basis 0.01 0.76 0.26 &
+                basis 0.01 0.76 0.76 &
+                basis 0.01 0.26 0.76 &
+                basis 0.51 0.26 0.26 &
+                basis 0.51 0.76 0.26 &
+                basis 0.51 0.76 0.76 &
+                basis 0.51 0.26 0.76 &
+		
+region		box block  0  ${dimx}  2  ${dimy}  2  ${dimz}
+# create hard segment atoms with chain in the middle #
+region		middle block  6 10 5 6 5 6
+
+create_box	9 box
+
+#region		new block 2 3 2 3 5 ${dimz}
+
+create_atoms	9 region box  basis 1 5 basis 2 5
+region		hollow block INF INF 3 8 3 8
+delete_atoms	region hollow
+region		hollow2 block 0 11 INF INF INF INF
+delete_atoms	region hollow2
+
+
+create_atoms	9 region middle basis 1 1 basis 2 2 &
+		basis 3 3 &
+		basis 4 4 &
+		basis 5 3 &
+		basis 6 4 &
+		basis 7 3 &
+		basis 8 4 &
+		basis 9 3 &
+		basis 10 4 &
+		basis 11 6 &
+		basis 12 6 &
+		basis 13 6 &
+		basis 14 6 &
+		basis 15 6 &
+		basis 16 6 &
+		basis 17 6 &
+		basis 18 6 &
+
+# create soft segment  		
+region		middle5 block  0 6 5 6 5 6
+create_atoms	9 region middle5 basis 1 7 basis 2 8
+
+region		middle2 block  10 16 5 6 5 6
+create_atoms	9 region middle2 basis 1 7 basis 2 8
+
+
+#mass (soft segment = 1.0 / hard segment = 0.99 (0.11*9) / solvent = 0.16)
+variable	mass5 equal 1.0
+mass		* 1.0
+mass		1 0.2
+mass		2 0.2
+mass		3 0.1
+mass		4 0.1
+mass		5 0.35
+
+mass		6 0.1
+mass		7 1.0
+mass            8 1.0
+
+###### randomly reset some of the bottom substrate atoms to radical atoms ####
+
+group           patch4 type 4 
+group		patch1 type 1
+group		patch2 type 2
+group		patch3 type 3
+group		patch6 type 6
+group           patch5 type 5
+group           patch7 type 7
+group           patch8 type 8
+#delete_atoms	group patch6
+group		patch9 type 9
+delete_atoms	group patch9
+#delete_atoms    group patch3
+#delete_atoms    group patch4
+#delete_atoms    group patch6
+
+#temperature is 0.028 before
+variable	t equal 0.2
+variable	tf equal 0.2
+velocity	all create $t 55
+
+#c is 2.35 before for chains, 1.9 for very compact
+variable	c equal 1.8
+variable	s equal $c/2^(1./6.)
+
+#variable        m equal ${shift}/2^(1./6.) 
+#variable        n equal $m*1.6
+
+variable	u equal 1.0
+variable	v equal $u/2^(1./6.)
+
+variable	p equal 1.0
+variable	q equal $p/2^(1./6.)
+
+variable	h equal 1.0
+variable	k equal $h/2^(1./6.)
+
+variable	h2 equal 1.0
+variable	k2 equal ${h2}/2^(1./6.)
+
+variable	h3 equal sqrt(2.0) # 1.414
+variable	k3 equal ${h3}/2^(1./6.)
+
+variable        b equal 0.2
+variable	b1 equal 0.14
+
+variable        c3 equal 2.0
+variable        s3 equal ${c3}/2^(1./6.)
+
+variable        c5 equal 1.6
+variable        s5 equal ${c5}/2^(1./6.)
+
+variable        h4 equal 0.5
+variable        k4 equal ${h4}/2^(1./6.)
+
+variable        h5 equal 0.25
+variable        k5 equal ${h5}/2^(1./6.)
+
+variable        c4 equal 0.707 
+variable        s4 equal ${c4}/2^(1./6.)
+
+variable        c6 equal 2.5
+variable        s6 equal ${c6}/2^(1./6.)
+
+variable        c7 equal 2.8
+variable        s7 equal ${c7}/2^(1./6.)
+
+#pair_style	lj/cut/bump/smooth/linear 2.5
+pair_style	lj/cut/bump 2.8 #cutoff 2.8
+pair_coeff      * * 0.02 $v 1.0 1 0 $u
+
+#backbone
+#in hard segment
+pair_coeff	1 1 5.0 $s  1.0 1 0 1.8 #1.8 only repulsion 
+pair_coeff	2 2 5.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+pair_coeff	1 2 5.0 ${k2} 1.2 1 1.0 1.8 #1 strong bond  
+
+#connect soft segments in outside and inside hard segments
+pair_coeff      2 7 20.0 ${k2} 1.2 1 1.0 1.8 #1 strong bond 
+pair_coeff      1 8 20.0 ${k2} 1.2 1 1.0 1.8 #1 strong bond 
+pair_coeff      1 7 20.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+pair_coeff      2 8 20.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+
+#soft segment (distance between soft/soft = 2.2)
+pair_coeff      7 7 20.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+pair_coeff      8 8 20.0 $s  1.0 1 0 1.8 #1.8 only repulsion
+pair_coeff      7 8 20.0 ${k2} 1.2 1 1.0 1.8 #1 strong bond 
+
+#intramolecular interactions in hard segments
+pair_coeff	1 3 20.0 ${k4} 1.2 1 2.0 1.118 #0.5 strong bond
+pair_coeff	2 3 20.0 ${k4} 1.2 1 2.0 1.118 #0.5 strong bond
+pair_coeff	1 4 20.0 ${k4} 1.2 1 2.0 1.118 #0.5 strong bond
+pair_coeff	2 4 20.0 ${k4} 1.2 1 2.0 1.118 #0.5 strong bond
+pair_coeff      1*2 6 20.0 ${s4} 1.2 1 2.0 1.225 #0.707 strong bond
+
+pair_coeff      3 4 20.0 ${s4} 1.2 1 2.0 1.225 #0.707 weak bond
+pair_coeff      3*4 6 20.0 ${k4} 1.2 1 2.0 1.118 #0.5 strong bond
+#pair_coeff      3*4 6 0.01 ${k5} 1.2 1 0.0 0.25 #0.25 only repulsion
+
+pair_coeff	3 3 5.0 ${k2} 1.2 1 1.0 1.414 #1 strong bond
+pair_coeff	4 4 5.0 ${k2} 1.2 1 1.0 1.414 #1 strong bond
+
+pair_coeff      6 6 5.0 ${k2} 1.2 1 1.0 1.414 #1 strong bond
+
+#intermolecular interactions between soft and hard segments
+
+pair_coeff      3*4 7 0.01 ${k4} 1.2 1 0.0 0.5 #0.5 only repulsion
+pair_coeff      3*4 8 0.01 ${k4} 1.2 1 0.0 0.5 #0.5 only repulsion
+pair_coeff      6 7 0.01 ${k4} 1.2 1 0.0 0.5 #0.5 only repulsion
+pair_coeff      6 8 0.01 ${k4} 1.2 1 0.0 0.5 #0.5 only repulsion
+
+#interaction with solvent particles
+variable        c8 equal 2.0
+variable        s8 equal ${c8}/2^(1./6.)
+
+variable        c9 equal 2.2
+variable        s9 equal ${c9}/2^(1./6.)
+
+variable        c10 equal 0.3
+variable        s10 equal ${c10}/2^(1./6.)
+
+pair_coeff      1*2 5 0.05 ${s9} 1.2 1 0.0 2.2 # 2.2 only repulsion
+
+pair_coeff      3*4 5 0.01 ${s10} 1.2 1 0.0 0.3 #only repulsion
+pair_coeff      5 6 0.01 ${s10} 1.2 1 0.0 0.3 #only repulsion
+
+pair_coeff      5 5 0.05 ${s9} 1.2 1 0.0 2.2 # 2.2 only repulsion
+
+pair_coeff      5 7 0.05 ${s8} 1.2 1 0.0 2.0 # 2.0 only repulsion
+pair_coeff      5 8 0.05 ${s8} 1.2 1 0.0 2.0 # 2.0 only repulsion
+
+#velocity	all set NULL 0.0 0.0
+#fix		11 all setforce NULL 0.0 0.0
+
+pair_modify	tail no
+pair_modify	shift yes
+neighbor	0.5 bin
+neigh_modify	every 1 delay 0 check yes 
+#neigh_modify    page 100000000000 
+#neigh_modify    one  10000000000 
+
+timestep	0.001
+thermo		100
+thermo_style    custom step temp pe ke etotal pxx pyy pzz lx ly lz press vol  
+
+#pair_write      7 7 1000 r 0.1 3.5 table77 LJ
+#pair_write      8 8 1000 r 0.1 3.5 table88 LJ
+#pair_write      7 8 1000 r 0.1 3.5 table78 LJ
+
+#pair_write      1 1 1000 r 0.1 3.5 table11 LJ
+#pair_write      1 2 1000 r 0.1 3.5 table12 LJ
+#pair_write      2 2 1000 r 0.1 3.5 table22 LJ
+
+#pair_write      3 3 1000 r 0.1 3.5 table33 LJ
+#pair_write      4 4 1000 r 0.1 3.5 table44 LJ
+#pair_write      6 6 1000 r 0.1 3.5 table66 LJ
+
+#pair_write      1 6 1000 r 0.1 3.5 table16 LJ
+#pair_write      2 6 1000 r 0.1 3.0 table26 LJ
+#pair_write      1 3 1000 r 0.1 3.5 table13 LJ
+#pair_write      3 4 1000 r 0.1 3.5 table34 LJ
+#pair_write      3 6 1000 r 0.1 3.5 table36 LJ
+
+#pair_write      3 7 1000 r 0.1 3.5 table37 LJ
+#pair_write      4 7 1000 r 0.1 3.5 table47 LJ
+#pair_write      6 7 1000 r 0.1 3.5 table67 LJ
+#pair_write      3 5 1000 r 0.1 3.5 table35 LJ
+
+#quit
+dump            1 all custom 100000 lata4olivia_initial id type x y z fx fy fz
+
+############temperature control
+fix             1 all nvt temp ${tf} ${tf} 0.1
+
+############decide the length of the chain and the number of chains
+variable        nrepeat equal 16 #chain length
+#variable        nrep equal 4  #sample size
+
+###############make one single chain
+replicate       ${nrepeat} 1 1
+region  end block  0 2 INF INF INF INF units box
+delete_atoms    region end
+
+################increase the box
+variable        newsized equal ly*16
+fix             2 all deform 1 y final 0 ${newsized} z final 0 ${newsized} units box
+
+run             100000
+############deform to x axis##########################################################
+unfix           2
+variable        lengthx equal 50*${nrepeat}/4.0
+fix             2 all deform 1 x final 0 ${lengthx} units box
+run             100000
+unfix           2
+#############make the simulation box cubic############################################
+variable        newsize equal (lx*ly*lz)^(1./3.)
+
+fix             2 all deform 1 x final 0 ${newsize} y final 0 ${newsize} z final 0 ${newsize} units box
+run             100000
+unfix           2
+#############replicate the system
+replicate       72 4 4   #replicate into 1152 chains
+velocity        all create ${tf} 9936    #add velocity
+
+#############high temp relaxation##########################################
+unfix           1
+fix             1 all nvt temp ${tf} ${tf} 0.1
+run             700000
+
+#############returning to original density 1000 per 1unit################################ 
+variable        newsizerx equal lx/(320^(1./3.)) 
+variable        newsizery equal ly/(320^(1./3.))
+variable        newsizerz equal lz/(320^(1./3.))
+
+fix             2 all deform 1 x final 0 ${newsizerx} y final 0 ${newsizery} z final 0 ${newsizerz} units box
+run             500000
+unfix           2
+
+#write_data      s0.data
+############cooling#######################################################
+variable        ct equal 0.04
+
+unfix           1
+fix             1 all nvt temp ${tf} ${ct} 0.1 #cooling
+run             200000
+############maintaining temp########################################
+unfix           1
+fix             1 all nvt temp ${ct} ${ct} 0.01
+run             300000
+unfix           1
+
+write_data      s1.data 
+quit
+
+
+
+
+
+################P change into 0.001######################
+variable        pressurenow equal press
+fix             1 all npt temp ${ct} ${ct} 0.01 iso ${pressurenow} 0.001 10
+run             100000
+unfix           1
+
+################maintain the pressure 0.001##############
+fix             1 all npt temp ${ct} ${ct} 0.01 iso 0.001 0.001 10
+run             400000
+
+###############decompression##########################################
+variable       finalpress equal press
+fix             1 all npt temp ${ct} ${ct} 0.01 iso ${finalpress} 0.0 10
+run            200000
+unfix          1
+
+###############maintain pressure_relaxation############################
+fix             1 all npt temp ${ct} ${ct} 1.0 x 0.0 0.0 5.0 y 0.0 0.0 5.0 z 0.0 0.0 5.0
+run            200000
+unfix          1
+
+write_data     s1.data
